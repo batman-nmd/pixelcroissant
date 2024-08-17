@@ -51,23 +51,23 @@ function PatternGenerator() {
     canvas.setZoom(scale);
   
     const options = { selectable: false, evented: false };
-  
-if (isAlpha) {
-    const checkerboardPattern = document.createElement('canvas');
-    checkerboardPattern.width = checkerboardPattern.height = 80; // Taille du damier
-    const ctx = checkerboardPattern.getContext('2d');
-    ctx.fillStyle = '#CCCE93';
-    ctx.fillRect(0, 0, 40, 40);
-    ctx.fillRect(40, 40, 40, 40);
-    ctx.fillStyle = '#00CCCB';
-    ctx.fillRect(40, 0, 40, 40);
-    ctx.fillRect(0, 40, 40, 40);
 
-    const pattern = canvas.getContext().createPattern(checkerboardPattern, 'repeat');
-    canvas.backgroundColor = pattern;
-  } else {
-    canvas.backgroundColor = backgroundColor;
-  }
+    if (isAlpha) {
+      const checkerboardPattern = document.createElement('canvas');
+      checkerboardPattern.width = checkerboardPattern.height = 80; // Size of checkerboard
+      const ctx = checkerboardPattern.getContext('2d');
+      ctx.fillStyle = '#CCCE93';
+      ctx.fillRect(0, 0, 40, 40);
+      ctx.fillRect(40, 40, 40, 40);
+      ctx.fillStyle = '#00CCCB';
+      ctx.fillRect(40, 0, 40, 40);
+      ctx.fillRect(0, 40, 40, 40);
+
+      const pattern = canvas.getContext().createPattern(checkerboardPattern, 'repeat');
+      canvas.backgroundColor = pattern;
+    } else {
+      canvas.backgroundColor = backgroundColor;
+    }
 
     if (showBorder) {
       const border = new Rect({
@@ -234,7 +234,7 @@ if (isAlpha) {
               <label style={styles.label}>
                 Border Color:
                 <input style={styles.input} type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} />
-            </label>
+              </label>
 
               <label style={styles.label}>
                 Border Width:
@@ -340,57 +340,58 @@ if (isAlpha) {
 }
 
 const styles = {
-    sidebar: {
-      flex: '0 0 300px',
-      padding: '20px',
-      backgroundColor: '#f5f5f5',
-      borderRight: '1px solid #ddd',
-      height: '100vh',
-      overflowY: 'auto',
-    },
-    canvasContainer: {
-      flex: '1',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      overflow: 'hidden',
-    },
-    canvas: {
-      maxWidth: '100%',
-      maxHeight: '100%',
-      width: 'auto',
-      height: 'auto',
-    },
-    heading: {
-      fontSize: '1.5em',
-      marginBottom: '20px',
-    },
-    section: {
-      marginBottom: '20px',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '10px',
-      fontWeight: 'bold',
-    },
-    input: {
-      width: '100%',
-      padding: '8px',
-      marginTop: '5px',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    button: {
-      padding: '10px 20px',
-      backgroundColor: '#007bff',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '1em',
-    },
-  };
-  
-  export default PatternGenerator;
-  
+  sidebar: {
+    flex: '0 0 350px',  // Reduce sidebar width
+    padding: '10px',    // Reduce padding
+    backgroundColor: '#f5f5f5',
+    borderRight: '1px solid #ddd',
+    height: '100vh',
+    overflowY: 'auto',
+    fontSize: '0.9em',  // Reduce font size
+  },
+  canvasContainer: {
+    flex: '1',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '10px',
+    overflow: 'hidden',
+  },
+  canvas: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    width: 'auto',
+    height: 'auto',
+  },
+  heading: {
+    fontSize: '1.2em',  // Reduce heading size
+    marginBottom: '15px',
+  },
+  section: {
+    marginBottom: '15px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '5px',
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '100%',
+    padding: '5px',  // Reduce input padding
+    marginTop: '3px',  // Reduce margin
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+  },
+  button: {
+    padding: '8px 15px',  // Reduce button padding
+    marginBottom: '20px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '1em',
+  },
+};
+
+export default PatternGenerator;
