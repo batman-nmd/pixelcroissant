@@ -5,6 +5,7 @@ import Register from './auth/Register';
 import PatternGenerator from './components/PatternGenerator';
 import ForgotPassword from './auth/ForgotPassword';
 import ResetPassword from './auth/ResetPassword';
+import './styles.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

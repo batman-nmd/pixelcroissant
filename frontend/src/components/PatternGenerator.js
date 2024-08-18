@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas, Rect, Line, Text, Circle } from 'fabric';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,8 +6,8 @@ function PatternGenerator() {
   const [patternName, setPatternName] = useState('MyPattern');
   const [width, setWidth] = useState(1920);
   const [height, setHeight] = useState(1080);
-  const [tempWidth, setTempWidth] = useState(1920); // Valeur temporaire pour la largeur
-  const [tempHeight, setTempHeight] = useState(1080); // Valeur temporaire pour la hauteur
+  const [tempWidth, setTempWidth] = useState(3840); // Valeur temporaire pour la largeur
+  const [tempHeight, setTempHeight] = useState(2160); // Valeur temporaire pour la hauteur
   const [backgroundColor, setBackgroundColor] = useState('#000000');
   const [showBackground, setshowBackground] = useState(true);
   const [showBorder, setShowBorder] = useState(true);
@@ -23,7 +23,7 @@ function PatternGenerator() {
   const [circleColor, setCircleColor] = useState('#ffffff');
   const [circleWidth, setCircleWidth] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
-  const [gridSpacing, setGridSpacing] = useState(50);
+  const [gridSpacing, setGridSpacing] = useState(100);
   const [gridColor, setGridColor] = useState('#ffffff');
   const [gridWidth, setGridWidth] = useState(1);
   const [textColorPattern, setTextColorPattern] = useState('#ffffff');
@@ -36,16 +36,54 @@ function PatternGenerator() {
   const [showResolution, setShowResolution] = useState(true);
   const [resolutionX, setResolutionX] = useState(width / 2);
   const [resolutionY, setResolutionY] = useState(3 * height / 4);
+  const videoStandards = [
+    { label: '1920x1080', width: 1920, height: 1080, font: 50},
+    { label: '1920x1200', width: 1920, height: 1200, font: 50}, 
+    { label: '2048x1080', width: 2048, height: 1080, font: 50},
+    { label: '2560x1600', width: 2560, height: 1600, font: 50}, 
+    { label: '2716x1600', width: 2716, height: 1600, font: 50},
+    { label: '3440x1440', width: 3440, height: 1440, font: 50},
+    { label: '3840x1600', width: 3840, height: 1600, font: 100},
+    { label: '3840x2160', width: 3840, height: 2160, font: 100},
+    { label: '3840x2400', width: 3840, height: 2400, font: 100},
+    { label: '4096x2160', width: 4096, height: 2160, font: 100},
+    { label: '5120x2160', width: 5120, height: 2160, font: 100},
+    { label: '7680x4320', width: 7680, height: 4320, font: 100},
+  ];
+
+  const handleStandardChange = (event) => {
+    const index = parseInt(event.target.value, 10);
+    if (!isNaN(index)) {
+      const selectedStandard = videoStandards[index];
+      if (selectedStandard) {
+        setTempWidth(selectedStandard.width);
+        setTempHeight(selectedStandard.height);
+        setWidth(selectedStandard.width/scaleCorrection);
+        setHeight(selectedStandard.height/scaleCorrection);
+        setFontSizePattern(selectedStandard.font);
+        setFontSizeResolution(selectedStandard.font);
+      }
+    }
+  };
+  
+  
+  const scaleCorrection = 2;
 
   const email = localStorage.getItem('email');
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
-    navigate('/login');
-    window.location.reload();
-  };
+  const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [isDownloadButtonClicked, setIsDownloadButtonClicked] = useState(false);
+
+    const handleLogout = () => {
+    setIsButtonClicked(true);
+    setTimeout(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('email');
+        navigate('/login');
+        window.location.reload();
+    }, 100);
+    };
 
   const canvasRef = useRef(null);
 
@@ -90,8 +128,9 @@ function PatternGenerator() {
 };
 
 useEffect(() => {
-    const scaledWidth = width / 2;
-    const scaledHeight = height / 2;
+    const scaleFactor = 1;
+    const scaledWidth = width / 1;
+    const scaledHeight = height / 1;
   
     const canvas = new Canvas(canvasRef.current, {
       width: scaledWidth,
@@ -109,43 +148,43 @@ useEffect(() => {
     if (showBorder) {
       const border = new Rect({
         fill: 'transparent',
-        width: (width - borderWidth)/2,
-        height: (height - borderWidth)/2,
+        width: (width - borderWidth)/scaleFactor,
+        height: (height - borderWidth)/scaleFactor,
         stroke: borderColor,
-        strokeWidth: borderWidth/2,
+        strokeWidth: borderWidth/scaleFactor,
         ...options,
       });
       canvas.add(border);
     }
 
     if (showMiddle) {
-      const middleHorizontal = new Line([0, height / 4, width, height / 4], {
+      const middleHorizontal = new Line([0, height / (2*scaleFactor), width/scaleFactor, height / (2*scaleFactor)], {
         stroke: middleColor,
-        strokeWidth: middleWidth / 2,
+        strokeWidth: middleWidth / scaleFactor,
         ...options,
       });
       middleHorizontal.set({
-        top: height / 4 - middleWidth / 4,
+        top: height / (2*scaleFactor) - middleWidth / (2*scaleFactor),
       });
-      const middleVertical = new Line([width / 4, 0, width / 4, height/2], {
+      const middleVertical = new Line([width / (2*scaleFactor), 0, width / (2*scaleFactor), height/scaleFactor], {
         stroke: middleColor,
-        strokeWidth: middleWidth / 2,
+        strokeWidth: middleWidth / scaleFactor,
         ...options,
       });
       middleVertical.set({
-        left: width / 4 - middleWidth / 4,
+        left: width / (2*scaleFactor) - middleWidth / (2*scaleFactor),
       });
       canvas.add(middleHorizontal);
       canvas.add(middleVertical);
     }
 
     if (showCross) {
-      const crossDiagonal1 = new Line([0, 0, width/2, height/2], {
+      const crossDiagonal1 = new Line([0, 0, width/scaleFactor, height/scaleFactor], {
         stroke: crossColor,
         strokeWidth: crossWidth,
         ...options,
       });
-      const crossDiagonal2 = new Line([0, height/2, width/2, 0], {
+      const crossDiagonal2 = new Line([0, height/scaleFactor, width/scaleFactor, 0], {
         stroke: crossColor,
         strokeWidth: crossWidth,
         ...options,
@@ -155,19 +194,19 @@ useEffect(() => {
     }
 
     if (showGrid) {
-      for (let i = gridSpacing/2; i < width/2; i += gridSpacing/2) {
-        const gridLineVertical = new Line([i, 0, i, height/2], {
+      for (let i = gridSpacing/scaleCorrection; i < width/scaleFactor; i += gridSpacing/scaleCorrection) {
+        const gridLineVertical = new Line([i, 0, i, height/scaleFactor], {
           stroke: gridColor,
-          strokeWidth: gridWidth/2,
+          strokeWidth: gridWidth/scaleFactor,
           ...options,
         });
         canvas.add(gridLineVertical);
       }
 
-      for (let i = gridSpacing/2; i < height/2; i += gridSpacing/2) {
-        const gridLineHorizontal = new Line([0, i, width/2, i], {
+      for (let i = gridSpacing/scaleCorrection; i < height/scaleFactor; i += gridSpacing/scaleCorrection) {
+        const gridLineHorizontal = new Line([0, i, width/scaleFactor, i], {
           stroke: gridColor,
-          strokeWidth: gridWidth/2,
+          strokeWidth: gridWidth/scaleFactor,
           ...options,
         });
         canvas.add(gridLineHorizontal);
@@ -176,12 +215,12 @@ useEffect(() => {
     if (showCircle) {
     const circleDiameter = Math.min(width, height);
     const circle = new Circle({
-      left: width / 4,
-      top: height / 4,
-      radius: (circleDiameter / 4) - (circleWidth/4),
+      left: width / (2*scaleFactor),
+      top: height / (2*scaleFactor),
+      radius: (circleDiameter / (2*scaleFactor)) - (circleWidth/(2*scaleFactor)),
       fill: 'transparent',
       stroke: circleColor,
-      strokeWidth: circleWidth / 2,
+      strokeWidth: circleWidth / scaleFactor,
       originX: 'center',
       originY: 'center',
       ...options,
@@ -191,10 +230,10 @@ useEffect(() => {
 
     if (showPatternName) {
       const nameText = new Text(patternName, {
-        left: patternNameX / 2,
-        top: patternNameY / 2,
+        left: patternNameX / scaleFactor,
+        top: patternNameY / scaleFactor,
         fill: textColorPattern,
-        fontSize: fontSizePattern / 2,
+        fontSize: fontSizePattern / scaleFactor,
         stroke: '#000000',
         strokeWidth: 1, 
         originX: 'center',
@@ -206,11 +245,11 @@ useEffect(() => {
     }
 
     if (showResolution) {
-      const resolutionText = new Text(`${width}x${height}`, {
-        left: resolutionX / 2,
-        top: resolutionY / 2,
+      const resolutionText = new Text(`${width*scaleCorrection}x${height*scaleCorrection}`, {
+        left: resolutionX / scaleFactor,
+        top: resolutionY / scaleFactor,
         fill: textColorResolution,
-        fontSize: fontSizeResolution / 2,
+        fontSize: fontSizeResolution / scaleFactor,
         stroke: '#000000',
         strokeWidth: 1, 
         originX: 'center',
@@ -251,18 +290,20 @@ useEffect(() => {
 };
 
   const handleResolutionBlur = () => {
-    setWidth(tempWidth);
-    setHeight(tempHeight);
+    setWidth(tempWidth/scaleCorrection);
+    setHeight(tempHeight/scaleCorrection);
   };
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === 'Tab') {
-      setWidth(tempWidth);
-      setHeight(tempHeight);
+      setWidth(tempWidth/scaleCorrection);
+      setHeight(tempHeight/scaleCorrection);
     }
   };
 
+
   const downloadImage = () => {
+    setIsDownloadButtonClicked(true);
     const canvasElement = canvasRef.current;
     // Set backgroundColor to 'transparent' if alpha is true
     if (showBackground) {
@@ -271,8 +312,11 @@ useEffect(() => {
     const dataURL = canvasElement.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataURL;
-    link.download = `${patternName}_${width}x${height}.png`;
+    link.download = `${patternName}_${width*scaleCorrection}x${height*scaleCorrection}.png`;
     link.click();
+    setTimeout(() => {
+      setIsDownloadButtonClicked(false);
+    }, 200);
   };
 
   return (
@@ -280,37 +324,51 @@ useEffect(() => {
       <div style={styles.sidebar}>
       <header style={styles.header}>
         <span>Logged in as: {email}</span>
-        <button onClick={handleLogout} style={styles.buttonExit}>Logout</button>
+        <button 
+        onClick={handleLogout} 
+        style={{ 
+            ...styles.buttonExit, 
+            ...(isButtonClicked ? styles.buttonExitActive : {}) 
+        }}
+        >
+        Logout
+        </button>
       </header>
-        <h1 style={styles.heading}>Create a New Pattern</h1>
+      <h1 style={styles.heading}>Create a New Pattern</h1>
         <div style={styles.section}>
           <label style={styles.label}>
             Pattern Name:
             <input style={styles.input} type="text" value={patternName} onChange={(e) => setPatternName(e.target.value)} />
           </label>
           <div style={styles.section}>
-  <label style={styles.labelInline}>Resolution:</label>
-  <div style={styles.resolutionRow}>
-    <input
-      style={styles.inputResolution}
-      type="number"
-      value={tempWidth}
+            <label style={styles.labelInline}>Resolution:</label>
+            <div style={styles.resolutionRow}>
+              <input
+                style={styles.inputResolution}
+                type="number"
+                value={tempWidth}
                 onChange={(e) => handleResolutionChange(e, 'width')}
                 onKeyDown={handleKeyDown}
                 onBlur={handleResolutionBlur}
-    />
-    <span style={styles.labelInline}>x</span>
-    <input
-      style={styles.inputResolution}
-      type="number"
-      value={tempHeight}
+              />
+              <span style={styles.labelInline}>x</span>
+              <input
+                style={styles.inputResolution}
+                type="number"
+                value={tempHeight}
                 onChange={(e) => handleResolutionChange(e, 'height')}
                 onKeyDown={handleKeyDown}
                 onBlur={handleResolutionBlur}
-    />
-    <span style={styles.labelInline}>pixels</span>
-  </div>
-</div>
+              />
+              <span style={styles.labelInline}>pixels</span>
+              <select style={styles.select} onChange={handleStandardChange}>
+                <option value="">Select Standard</option>
+                {videoStandards.map((standard, index) => (
+                  <option key={index} value={index}>{standard.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
         
         <div style={styles.section}>
@@ -472,25 +530,35 @@ useEffect(() => {
         </div>
 
 
-        <button style={styles.button} onClick={downloadImage}>Download PNG</button>
-      </div>
-      <div style={styles.canvasContainer}>
-        <canvas ref={canvasRef}></canvas>
+        <div style={styles.buttonContainer}>
+  <button 
+    style={{ 
+      ...styles.button, 
+      ...(isDownloadButtonClicked ? styles.buttonActive : {}) 
+    }} 
+    onClick={downloadImage}
+  >
+    Download PNG
+  </button>
+</div>
+    </div>
+    <div style={styles.canvasContainer}>
+      <canvas ref={canvasRef}></canvas>
       </div>
     </div>
   );
 }
 
 const styles = {
-  sidebar: {
-    flex: '0 0 350px',  // Reduce sidebar width
-    padding: '10px',    // Reduce padding
-    backgroundColor: '#f5f5f5',
-    borderRight: '1px solid #ddd',
-    height: '100vh',
-    overflowY: 'auto',
-    fontSize: '0.9em',  // Reduce font size
-  },
+    sidebar: {
+        flex: '0 0 350px',
+        padding: '10px',
+        backgroundColor: 'linear-gradient(135deg, #f0f0f0, #d4d4d4)',
+        borderRight: '1px solid #ddd',
+        height: '100vh',
+        overflowY: 'auto',
+        fontSize: '0.9em',
+      },
   canvasContainer: {
     flex: '1',
     display: 'flex',
@@ -504,27 +572,54 @@ const styles = {
     height: 'auto',
   },
   heading: {
-    fontSize: '1.2em',  // Reduce heading size
+    fontSize: '1.4em',
     marginBottom: '15px',
+    color: '#333',
   },
   section: {
-    marginBottom: '15px',
+    marginBottom: '5px', // Réduction de la marge inférieure
+    padding: '8px',       // Réduction du padding interne
+    backgroundColor: '#ffffff',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)', // Réduction de l'ombre
   },
+  
   label: {
     display: 'block',
-    marginBottom: '5px',
+    marginBottom: '3px',   // Réduction de la marge inférieure
     fontWeight: 'bold',
-    width: '50%',
+    fontSize: '0.9em',     // Réduction de la taille de la police
   },
   input: {
     width: '100%',
-    padding: '5px',  // Reduce input padding
-    marginTop: '3px',  // Reduce margin
+    padding: '4px',        // Réduction du padding interne
+    marginTop: '2px',      // Réduction de la marge supérieure
     borderRadius: '4px',
     border: '1px solid #ccc',
+    fontSize: '0.9em',     // Réduction de la taille de la police
+  },
+  buttonExit: {
+    padding: '8px 15px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'transform 0.1s ease, background-color 0.1s ease',
+  },
+  buttonExitActive: {
+    transform: 'scale(0.95)',
+    backgroundColor: '#0056b3',
+  },
+  buttonContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',  // Utilisez cette ligne si vous souhaitez centrer également verticalement
+    marginTop: '20px', // Ajoutez un espace au-dessus si nécessaire
   },
   button: {
-    padding: '8px 15px',  // Reduce button padding
+    padding: '8px 15px',
     marginBottom: '20px',
     backgroundColor: '#007bff',
     color: '#fff',
@@ -532,22 +627,27 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '1em',
+    transition: 'transform 0.1s ease, background-color 0.1s ease',
   },
-  buttonExit: {
+  buttonActive: {
+    transform: 'scale(0.95)',
+    backgroundColor: '#0056b3',
   },
   paramRow: {
     display: 'flex',
     alignItems: 'center',
-    marginBottom: '10px',
+    marginBottom: '8px',  // Réduction de la marge inférieure
   },
   resolutionRow: {
     display: 'flex',
     alignItems: 'center',
+    marginBottom: '8px',  // Réduction de la marge inférieure
   },
   labelInline: {
-    marginRight: '5px',
+    marginRight: '4px',   // Réduction de la marge droite
     fontWeight: 'bold',
-  },
+    fontSize: '0.9em',    // Réduction de la taille de la police
+  },  
   inputColor: {
     width: '20px',  // Taille fixe du côté du carré
     height: '20px',  // Taille fixe du côté du carré
@@ -559,7 +659,7 @@ const styles = {
     cursor: 'pointer',  // Curseur en mode pointer pour indiquer que c'est cliquable
   },
   inputResolution: {
-    width: '60px',  // Ajustez la largeur si nécessaire
+    width: '50px',  // Ajustez la largeur si nécessaire
     marginRight: '5px',
     padding: '5px',
     borderRadius: '4px',
