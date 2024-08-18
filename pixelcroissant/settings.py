@@ -44,12 +44,14 @@ STATICFILES_DIRS = [
 
 INSTALLED_APPS = [
     'rest_framework',
+    'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +62,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]
 
 ROOT_URLCONF = 'pixelcroissant.urls'
@@ -139,3 +147,18 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email backend configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'baptiste.jaze@gmail.com'  # Remplace par ton adresse Gmail
+EMAIL_HOST_PASSWORD = 'hfii kfdf ykzu yqht '  # Remplace par le mot de passe d'application généré
+DEFAULT_FROM_EMAIL = 'baptiste.jaze@gmail.com'  # Remplace par ton adresse Gmail
+
+# URL to be used in the email verification link
+FRONTEND_URL = 'http://localhost:3000'  # Ou l'URL de votre frontend en production
+
+# Additional email settings
+EMAIL_SUBJECT_PREFIX = '[PixelCroissant] '

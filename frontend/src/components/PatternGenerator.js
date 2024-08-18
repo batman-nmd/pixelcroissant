@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Canvas, Rect, Line, Text, Circle } from 'fabric';
+import { useNavigate } from 'react-router-dom';
 
 function PatternGenerator() {
   const [patternName, setPatternName] = useState('MyPattern');
@@ -13,11 +14,14 @@ function PatternGenerator() {
   const [borderColor, setBorderColor] = useState('#ffffff');
   const [borderWidth, setBorderWidth] = useState(1);
   const [showMiddle, setShowMiddle] = useState(true);
-  const [middleColor, setMiddleColor] = useState('#ffffff');
-  const [middleWidth, setMiddleWidth] = useState(1);
+  const [middleColor, setMiddleColor] = useState('#FFFF00');
+  const [middleWidth, setMiddleWidth] = useState(2);
   const [showCross, setShowCross] = useState(true);
   const [crossColor, setCrossColor] = useState('#ffffff');
   const [crossWidth, setCrossWidth] = useState(1);
+  const [showCircle, setShowCircle] = useState(true);
+  const [circleColor, setCircleColor] = useState('#ffffff');
+  const [circleWidth, setCircleWidth] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
   const [gridSpacing, setGridSpacing] = useState(50);
   const [gridColor, setGridColor] = useState('#ffffff');
@@ -32,6 +36,16 @@ function PatternGenerator() {
   const [showResolution, setShowResolution] = useState(true);
   const [resolutionX, setResolutionX] = useState(width / 2);
   const [resolutionY, setResolutionY] = useState(3 * height / 4);
+
+  const email = localStorage.getItem('email');
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('email');
+    navigate('/login');
+    window.location.reload();
+  };
 
   const canvasRef = useRef(null);
 
@@ -50,28 +64,23 @@ function PatternGenerator() {
     let displayWidth = maxWidth;
     let displayHeight = maxHeight;
 
-    // Vérifiez d'abord si la largeur est limitante
     if (width > maxWidth) {
         displayWidth = maxWidth;
         displayHeight = displayWidth / aspectRatio;
 
-        // Si cela entraîne une hauteur trop grande, ajustez sur la hauteur
         if (displayHeight > maxHeight) {
             displayHeight = maxHeight;
             displayWidth = displayHeight * aspectRatio;
         }
     } else if (height > maxHeight) {
-        // Si la hauteur est limitante
         displayHeight = maxHeight;
         displayWidth = displayHeight * aspectRatio;
 
-        // Si cela entraîne une largeur trop grande, ajustez sur la largeur
         if (displayWidth > maxWidth) {
             displayWidth = maxWidth;
             displayHeight = displayWidth / aspectRatio;
         }
     } else {
-        // Si ni la largeur ni la hauteur ne sont limitantes, utilisez les dimensions d'origine
         displayWidth = width;
         displayHeight = height;
     }
@@ -80,17 +89,19 @@ function PatternGenerator() {
     canvasRef.current.style.height = `${displayHeight}px`;
 };
 
-  useEffect(() => {
+useEffect(() => {
+    const scaledWidth = width / 2;
+    const scaledHeight = height / 2;
+  
     const canvas = new Canvas(canvasRef.current, {
-      width: width,
-      height: height,
+      width: scaledWidth,
+      height: scaledHeight,
       backgroundColor: showBackground ? backgroundColor : 'transparent',
     });
-
-    // Pas de multiplicateur pour le rendu, dessiner directement à la résolution désirée
+  
     canvas.setDimensions({
-        width: width,
-        height: height
+      width: scaledWidth,
+      height: scaledHeight,
     });
 
     const options = { selectable: false, evented: false }; // pour pas de selection utilisateur
@@ -98,43 +109,43 @@ function PatternGenerator() {
     if (showBorder) {
       const border = new Rect({
         fill: 'transparent',
-        width: width - borderWidth,
-        height: height - borderWidth,
+        width: (width - borderWidth)/2,
+        height: (height - borderWidth)/2,
         stroke: borderColor,
-        strokeWidth: borderWidth,
+        strokeWidth: borderWidth/2,
         ...options,
       });
       canvas.add(border);
     }
 
     if (showMiddle) {
-      const middleHorizontal = new Line([0, height / 2, width, height / 2], {
+      const middleHorizontal = new Line([0, height / 4, width, height / 4], {
         stroke: middleColor,
-        strokeWidth: middleWidth,
+        strokeWidth: middleWidth / 2,
         ...options,
       });
       middleHorizontal.set({
-        top: height / 2 - middleWidth / 2,
+        top: height / 4 - middleWidth / 4,
       });
-      const middleVertical = new Line([width / 2, 0, width / 2, height], {
+      const middleVertical = new Line([width / 4, 0, width / 4, height/2], {
         stroke: middleColor,
-        strokeWidth: middleWidth,
+        strokeWidth: middleWidth / 2,
         ...options,
       });
       middleVertical.set({
-        left: width / 2 - middleWidth / 2,
+        left: width / 4 - middleWidth / 4,
       });
       canvas.add(middleHorizontal);
       canvas.add(middleVertical);
     }
 
     if (showCross) {
-      const crossDiagonal1 = new Line([0, 0, width, height], {
+      const crossDiagonal1 = new Line([0, 0, width/2, height/2], {
         stroke: crossColor,
         strokeWidth: crossWidth,
         ...options,
       });
-      const crossDiagonal2 = new Line([0, height, width, 0], {
+      const crossDiagonal2 = new Line([0, height/2, width/2, 0], {
         stroke: crossColor,
         strokeWidth: crossWidth,
         ...options,
@@ -144,47 +155,51 @@ function PatternGenerator() {
     }
 
     if (showGrid) {
-      for (let i = gridSpacing; i < width; i += gridSpacing) {
-        const gridLineVertical = new Line([i, 0, i, height], {
+      for (let i = gridSpacing/2; i < width/2; i += gridSpacing/2) {
+        const gridLineVertical = new Line([i, 0, i, height/2], {
           stroke: gridColor,
-          strokeWidth: gridWidth,
+          strokeWidth: gridWidth/2,
           ...options,
         });
         canvas.add(gridLineVertical);
       }
 
-      for (let i = gridSpacing; i < height; i += gridSpacing) {
-        const gridLineHorizontal = new Line([0, i, width, i], {
+      for (let i = gridSpacing/2; i < height/2; i += gridSpacing/2) {
+        const gridLineHorizontal = new Line([0, i, width/2, i], {
           stroke: gridColor,
-          strokeWidth: gridWidth,
+          strokeWidth: gridWidth/2,
           ...options,
         });
         canvas.add(gridLineHorizontal);
       }
     }
-
+    if (showCircle) {
     const circleDiameter = Math.min(width, height);
     const circle = new Circle({
-      left: width / 2,
-      top: height / 2,
-      radius: circleDiameter / 2,
+      left: width / 4,
+      top: height / 4,
+      radius: (circleDiameter / 4) - (circleWidth/4),
       fill: 'transparent',
-      stroke: '#ffffff',
-      strokeWidth: 1,
+      stroke: circleColor,
+      strokeWidth: circleWidth / 2,
       originX: 'center',
       originY: 'center',
       ...options,
     });
     canvas.add(circle);
+}
 
     if (showPatternName) {
       const nameText = new Text(patternName, {
-        left: patternNameX,
-        top: patternNameY,
+        left: patternNameX / 2,
+        top: patternNameY / 2,
         fill: textColorPattern,
-        fontSize: fontSizePattern,
+        fontSize: fontSizePattern / 2,
+        stroke: '#000000',
+        strokeWidth: 1, 
         originX: 'center',
         originY: 'center',
+        fontFamily: 'Helvetica Neue',
         ...options,
       });
       canvas.add(nameText);
@@ -192,12 +207,15 @@ function PatternGenerator() {
 
     if (showResolution) {
       const resolutionText = new Text(`${width}x${height}`, {
-        left: resolutionX,
-        top: resolutionY,
+        left: resolutionX / 2,
+        top: resolutionY / 2,
         fill: textColorResolution,
         fontSize: fontSizeResolution / 2,
+        stroke: '#000000',
+        strokeWidth: 1, 
         originX: 'center',
         originY: 'center',
+        fontFamily: 'Helvetica Neue',
         ...options,
       });
       canvas.add(resolutionText);
@@ -213,18 +231,24 @@ function PatternGenerator() {
   }, [
     width, height, backgroundColor, showBackground, showBorder, borderColor, borderWidth,
     showMiddle, middleColor, middleWidth, showCross, crossColor, crossWidth,
-    showGrid, gridSpacing, gridColor, gridWidth, patternName, textColorPattern, fontSizePattern, textColorResolution, fontSizeResolution,
+    showGrid, gridSpacing, gridColor, gridWidth, showCircle, circleColor, circleWidth, patternName, textColorPattern, fontSizePattern, textColorResolution, fontSizeResolution,
     showPatternName, patternNameX, patternNameY, showResolution, resolutionX, resolutionY
   ]);
 
   const handleResolutionChange = (event, dimension) => {
-    const value = parseInt(event.target.value, 10);
-    if (dimension === 'width') {
-      setTempWidth(value);
-    } else if (dimension === 'height') {
-      setTempHeight(value);
+    let value = parseInt(event.target.value, 10);
+    if (isNaN(value) || value < 1) {
+        value = 1; // Assure que la valeur minimale est 1
     }
-  };
+    if (value > 32764) {
+        value = 32764; // Assure que la valeur minimale est 1
+    }
+    if (dimension === 'width') {
+        setTempWidth(value);
+    } else if (dimension === 'height') {
+        setTempHeight(value);
+    }
+};
 
   const handleResolutionBlur = () => {
     setWidth(tempWidth);
@@ -254,6 +278,10 @@ function PatternGenerator() {
   return (
     <div style={{ display: 'flex' }}>
       <div style={styles.sidebar}>
+      <header style={styles.header}>
+        <span>Logged in as: {email}</span>
+        <button onClick={handleLogout} style={styles.buttonExit}>Logout</button>
+      </header>
         <h1 style={styles.heading}>Create a New Pattern</h1>
         <div style={styles.section}>
           <label style={styles.label}>
@@ -291,7 +319,7 @@ function PatternGenerator() {
               <input type="checkbox" checked={showBackground} onChange={(e) => setshowBackground(e.target.checked)} />
               Background
             </label>
-            {showBorder && (
+            {showBackground && (
               <>
                 <label style={styles.labelInline}>
                   <input style={styles.inputColor} type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
@@ -314,7 +342,7 @@ function PatternGenerator() {
                 </label>
                 <label style={styles.labelInline}>
                   Width:
-                  <input style={styles.inputNumber} type="number" value={borderWidth} onChange={(e) => setBorderWidth(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={borderWidth} onChange={(e) => setBorderWidth(Math.abs(parseInt(e.target.value, 10)))} />
                 </label>
               </>
             )}
@@ -334,7 +362,7 @@ function PatternGenerator() {
                 </label>
                 <label style={styles.labelInline}>
                   Width:
-                  <input style={styles.inputNumber} type="number" value={middleWidth} onChange={(e) => setMiddleWidth(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={middleWidth} onChange={(e) => setMiddleWidth(Math.abs(Math.abs(parseInt(e.target.value, 10))))} />
                 </label>
               </>
             )}
@@ -354,7 +382,27 @@ function PatternGenerator() {
                 </label>
                 <label style={styles.labelInline}>
                   Width:
-                  <input style={styles.inputNumber} type="number" value={crossWidth} onChange={(e) => setCrossWidth(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={crossWidth} onChange={(e) => setCrossWidth(Math.abs(parseInt(e.target.value, 10)))} />
+                </label>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.section}>
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showCircle} onChange={(e) => setShowCircle(e.target.checked)} />
+              Circle
+            </label>
+            {showCircle && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={circleColor} onChange={(e) => setCircleColor(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Width:
+                  <input style={styles.inputNumber} type="number" value={circleWidth} onChange={(e) => setCircleWidth(Math.abs(parseInt(e.target.value, 10)))} />
                 </label>
               </>
             )}
@@ -374,7 +422,7 @@ function PatternGenerator() {
                   </label>
                 <label style={styles.labelInline}>
                 Width:
-                  <input style={styles.inputNumber} type="number" value={gridWidth} onChange={(e) => setGridWidth(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={gridWidth} onChange={(e) => setGridWidth(Math.abs(parseInt(e.target.value, 10)))} />
                 </label>
                   <input style={styles.inputNumber} type="number" value={gridSpacing} onChange={(e) => setGridSpacing(parseInt(e.target.value, 10))} />
 
@@ -389,14 +437,14 @@ function PatternGenerator() {
               <input type="checkbox" checked={showPatternName} onChange={(e) => setShowPatternName(e.target.checked)} />
               Show PatternName
             </label>
-            {showCross && (
+            {showPatternName && (
               <>
                 <label style={styles.labelInline}>
                   <input style={styles.inputColor} type="color" value={textColorPattern} onChange={(e) => setTextColorPattern(e.target.value)} />
                 </label>
                 <label style={styles.labelInline}>
                   Font size:
-                  <input style={styles.inputNumber} type="number" value={fontSizePattern} onChange={(e) => setFontSizePattern(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={fontSizePattern} onChange={(e) => setFontSizePattern(Math.abs(parseInt(e.target.value, 10)))} />
                 </label>
               </>
             )}
@@ -409,14 +457,14 @@ function PatternGenerator() {
               <input type="checkbox" checked={showResolution} onChange={(e) => setShowResolution(e.target.checked)} />
               Show Resolution
             </label>
-            {showCross && (
+            {showResolution && (
               <>
                 <label style={styles.labelInline}>
                   <input style={styles.inputColor} type="color" value={textColorResolution} onChange={(e) => setTextColorResolution(e.target.value)} />
                 </label>
                 <label style={styles.labelInline}>
                   Font size:
-                  <input style={styles.inputNumber} type="number" value={fontSizeResolution} onChange={(e) => setFontSizeResolution(parseInt(e.target.value, 10))} />
+                  <input style={styles.inputNumber} type="number" value={fontSizeResolution} onChange={(e) => setFontSizeResolution(Math.abs(parseInt(e.target.value, 10)))} />
                 </label>
               </>
             )}
@@ -446,9 +494,7 @@ const styles = {
   canvasContainer: {
     flex: '1',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '10px',
+    padding: '20px',
     overflow: 'hidden',
   },
   canvas: {
@@ -486,6 +532,8 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '1em',
+  },
+  buttonExit: {
   },
   paramRow: {
     display: 'flex',
@@ -543,6 +591,12 @@ const styles = {
   'input::-webkit-inner-spin-button': {
     WebkitAppearance: 'none',
     margin: 0,
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: '#f5f5f5',
   },
 };
 
