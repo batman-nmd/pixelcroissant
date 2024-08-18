@@ -5,9 +5,10 @@ function PatternGenerator() {
   const [patternName, setPatternName] = useState('MyPattern');
   const [width, setWidth] = useState(1920);
   const [height, setHeight] = useState(1080);
-  const [scale, setScale] = useState(0.4); // Initial scale for better layout
+  const [tempWidth, setTempWidth] = useState(1920); // Valeur temporaire pour la largeur
+  const [tempHeight, setTempHeight] = useState(1080); // Valeur temporaire pour la hauteur
   const [backgroundColor, setBackgroundColor] = useState('#000000');
-  const [isAlpha, setIsAlpha] = useState(false);
+  const [showBackground, setshowBackground] = useState(true);
   const [showBorder, setShowBorder] = useState(true);
   const [borderColor, setBorderColor] = useState('#ffffff');
   const [borderWidth, setBorderWidth] = useState(1);
@@ -21,14 +22,18 @@ function PatternGenerator() {
   const [gridSpacing, setGridSpacing] = useState(50);
   const [gridColor, setGridColor] = useState('#ffffff');
   const [gridWidth, setGridWidth] = useState(1);
-  const [textColor, setTextColor] = useState('#ffffff');
-  const [fontSize, setFontSize] = useState(100);
+  const [textColorPattern, setTextColorPattern] = useState('#ffffff');
+  const [fontSizePattern, setFontSizePattern] = useState(100);
+  const [textColorResolution, setTextColorResolution] = useState('#ffffff');
+  const [fontSizeResolution, setFontSizeResolution] = useState(100);
   const [showPatternName, setShowPatternName] = useState(true);
   const [patternNameX, setPatternNameX] = useState(width / 2);
   const [patternNameY, setPatternNameY] = useState(height / 4);
   const [showResolution, setShowResolution] = useState(true);
   const [resolutionX, setResolutionX] = useState(width / 2);
   const [resolutionY, setResolutionY] = useState(3 * height / 4);
+
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     setPatternNameX(width / 2);
@@ -37,45 +42,64 @@ function PatternGenerator() {
     setResolutionY(3 * height / 4);
   }, [width, height]);
 
-  const canvasRef = useRef(null);
+    const adjustCanvasSize = () => {
+    const maxWidth = window.innerWidth * 0.75;
+    const maxHeight = window.innerHeight * 0.75;
+    const aspectRatio = width / height;
+
+    let displayWidth = maxWidth;
+    let displayHeight = maxHeight;
+
+    // Vérifiez d'abord si la largeur est limitante
+    if (width > maxWidth) {
+        displayWidth = maxWidth;
+        displayHeight = displayWidth / aspectRatio;
+
+        // Si cela entraîne une hauteur trop grande, ajustez sur la hauteur
+        if (displayHeight > maxHeight) {
+            displayHeight = maxHeight;
+            displayWidth = displayHeight * aspectRatio;
+        }
+    } else if (height > maxHeight) {
+        // Si la hauteur est limitante
+        displayHeight = maxHeight;
+        displayWidth = displayHeight * aspectRatio;
+
+        // Si cela entraîne une largeur trop grande, ajustez sur la largeur
+        if (displayWidth > maxWidth) {
+            displayWidth = maxWidth;
+            displayHeight = displayWidth / aspectRatio;
+        }
+    } else {
+        // Si ni la largeur ni la hauteur ne sont limitantes, utilisez les dimensions d'origine
+        displayWidth = width;
+        displayHeight = height;
+    }
+
+    canvasRef.current.style.width = `${displayWidth}px`;
+    canvasRef.current.style.height = `${displayHeight}px`;
+};
 
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
       width: width,
       height: height,
-      backgroundColor: isAlpha ? 'transparent' : backgroundColor,
+      backgroundColor: showBackground ? backgroundColor : 'transparent',
     });
-  
-    canvas.setWidth(width * scale);
-    canvas.setHeight(height * scale);
-    canvas.setZoom(scale);
-  
-    const options = { selectable: false, evented: false };
 
-    if (isAlpha) {
-      const checkerboardPattern = document.createElement('canvas');
-      checkerboardPattern.width = checkerboardPattern.height = 80; // Size of checkerboard
-      const ctx = checkerboardPattern.getContext('2d');
-      ctx.fillStyle = '#CCCE93';
-      ctx.fillRect(0, 0, 40, 40);
-      ctx.fillRect(40, 40, 40, 40);
-      ctx.fillStyle = '#00CCCB';
-      ctx.fillRect(40, 0, 40, 40);
-      ctx.fillRect(0, 40, 40, 40);
+    // Pas de multiplicateur pour le rendu, dessiner directement à la résolution désirée
+    canvas.setDimensions({
+        width: width,
+        height: height
+    });
 
-      const pattern = canvas.getContext().createPattern(checkerboardPattern, 'repeat');
-      canvas.backgroundColor = pattern;
-    } else {
-      canvas.backgroundColor = backgroundColor;
-    }
+    const options = { selectable: false, evented: false }; // pour pas de selection utilisateur
 
     if (showBorder) {
       const border = new Rect({
-        left: 0,
-        top: 0,
         fill: 'transparent',
-        width: width,
-        height: height,
+        width: width - borderWidth,
+        height: height - borderWidth,
         stroke: borderColor,
         strokeWidth: borderWidth,
         ...options,
@@ -89,10 +113,16 @@ function PatternGenerator() {
         strokeWidth: middleWidth,
         ...options,
       });
+      middleHorizontal.set({
+        top: height / 2 - middleWidth / 2,
+      });
       const middleVertical = new Line([width / 2, 0, width / 2, height], {
         stroke: middleColor,
         strokeWidth: middleWidth,
         ...options,
+      });
+      middleVertical.set({
+        left: width / 2 - middleWidth / 2,
       });
       canvas.add(middleHorizontal);
       canvas.add(middleVertical);
@@ -151,8 +181,8 @@ function PatternGenerator() {
       const nameText = new Text(patternName, {
         left: patternNameX,
         top: patternNameY,
-        fill: textColor,
-        fontSize: fontSize,
+        fill: textColorPattern,
+        fontSize: fontSizePattern,
         originX: 'center',
         originY: 'center',
         ...options,
@@ -164,8 +194,8 @@ function PatternGenerator() {
       const resolutionText = new Text(`${width}x${height}`, {
         left: resolutionX,
         top: resolutionY,
-        fill: textColor,
-        fontSize: fontSize / 2,
+        fill: textColorResolution,
+        fontSize: fontSizeResolution / 2,
         originX: 'center',
         originY: 'center',
         ...options,
@@ -175,18 +205,45 @@ function PatternGenerator() {
 
     canvas.renderAll();
 
+    adjustCanvasSize();
+
     return () => {
       canvas.dispose();
     };
   }, [
-    width, height, scale, backgroundColor, isAlpha, showBorder, borderColor, borderWidth,
+    width, height, backgroundColor, showBackground, showBorder, borderColor, borderWidth,
     showMiddle, middleColor, middleWidth, showCross, crossColor, crossWidth,
-    showGrid, gridSpacing, gridColor, gridWidth, patternName, textColor, fontSize,
+    showGrid, gridSpacing, gridColor, gridWidth, patternName, textColorPattern, fontSizePattern, textColorResolution, fontSizeResolution,
     showPatternName, patternNameX, patternNameY, showResolution, resolutionX, resolutionY
   ]);
 
+  const handleResolutionChange = (event, dimension) => {
+    const value = parseInt(event.target.value, 10);
+    if (dimension === 'width') {
+      setTempWidth(value);
+    } else if (dimension === 'height') {
+      setTempHeight(value);
+    }
+  };
+
+  const handleResolutionBlur = () => {
+    setWidth(tempWidth);
+    setHeight(tempHeight);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      setWidth(tempWidth);
+      setHeight(tempHeight);
+    }
+  };
+
   const downloadImage = () => {
     const canvasElement = canvasRef.current;
+    // Set backgroundColor to 'transparent' if alpha is true
+    if (showBackground) {
+      canvasElement.backgroundColor = 'transparent';
+    }
     const dataURL = canvasElement.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataURL;
@@ -203,132 +260,169 @@ function PatternGenerator() {
             Pattern Name:
             <input style={styles.input} type="text" value={patternName} onChange={(e) => setPatternName(e.target.value)} />
           </label>
-          <label style={styles.label}>
-            Width:
-            <input style={styles.input} type="number" value={width} onChange={(e) => setWidth(parseInt(e.target.value, 10))} />
-          </label>
-          <label style={styles.label}>
-            Height:
-            <input style={styles.input} type="number" value={height} onChange={(e) => setHeight(parseInt(e.target.value, 10))} />
-          </label>
+          <div style={styles.section}>
+  <label style={styles.labelInline}>Resolution:</label>
+  <div style={styles.resolutionRow}>
+    <input
+      style={styles.inputResolution}
+      type="number"
+      value={tempWidth}
+                onChange={(e) => handleResolutionChange(e, 'width')}
+                onKeyDown={handleKeyDown}
+                onBlur={handleResolutionBlur}
+    />
+    <span style={styles.labelInline}>x</span>
+    <input
+      style={styles.inputResolution}
+      type="number"
+      value={tempHeight}
+                onChange={(e) => handleResolutionChange(e, 'height')}
+                onKeyDown={handleKeyDown}
+                onBlur={handleResolutionBlur}
+    />
+    <span style={styles.labelInline}>pixels</span>
+  </div>
+</div>
+        </div>
+        
+        <div style={styles.section}>
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showBackground} onChange={(e) => setshowBackground(e.target.checked)} />
+              Background
+            </label>
+            {showBorder && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            Background Color:
-            <input style={styles.input} type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} disabled={isAlpha} />
-          </label>
-          <label style={styles.label}>
-            <input type="checkbox" checked={isAlpha} onChange={(e) => setIsAlpha(e.target.checked)} />
-            Alpha (Transparent Background)
-          </label>
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showBorder} onChange={(e) => setShowBorder(e.target.checked)} />
+              Border
+            </label>
+            {showBorder && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Width:
+                  <input style={styles.inputNumber} type="number" value={borderWidth} onChange={(e) => setBorderWidth(parseInt(e.target.value, 10))} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            <input type="checkbox" checked={showBorder} onChange={(e) => setShowBorder(e.target.checked)} />
-            Border
-          </label>
-          {showBorder && (
-            <>
-              <label style={styles.label}>
-                Border Color:
-                <input style={styles.input} type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} />
-              </label>
-
-              <label style={styles.label}>
-                Border Width:
-                <input style={styles.input} type="number" value={borderWidth} onChange={(e) => setBorderWidth(parseInt(e.target.value, 10))} />
-              </label>
-            </>
-          )}
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showMiddle} onChange={(e) => setShowMiddle(e.target.checked)} />
+              Middle
+            </label>
+            {showMiddle && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={middleColor} onChange={(e) => setMiddleColor(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Width:
+                  <input style={styles.inputNumber} type="number" value={middleWidth} onChange={(e) => setMiddleWidth(parseInt(e.target.value, 10))} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            <input type="checkbox" checked={showMiddle} onChange={(e) => setShowMiddle(e.target.checked)} />
-            Middle
-          </label>
-          {showMiddle && (
-            <>
-              <label style={styles.label}>
-                Middle Color:
-                <input style={styles.input} type="color" value={middleColor} onChange={(e) => setMiddleColor(e.target.value)} />
-              </label>
-              <label style={styles.label}>
-                Middle Width:
-                <input style={styles.input} type="number" value={middleWidth} onChange={(e) => setMiddleWidth(parseInt(e.target.value, 10))} />
-              </label>
-            </>
-          )}
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showCross} onChange={(e) => setShowCross(e.target.checked)} />
+              Cross
+            </label>
+            {showCross && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={crossColor} onChange={(e) => setCrossColor(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Width:
+                  <input style={styles.inputNumber} type="number" value={crossWidth} onChange={(e) => setCrossWidth(parseInt(e.target.value, 10))} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            <input type="checkbox" checked={showCross} onChange={(e) => setShowCross(e.target.checked)} />
-            Cross
-          </label>
-          {showCross && (
-            <>
-              <label style={styles.label}>
-                Cross Color:
-                <input style={styles.input} type="color" value={crossColor} onChange={(e) => setCrossColor(e.target.value)} />
-              </label>
-              <label style={styles.label}>
-                Cross Width:
-                <input style={styles.input} type="number" value={crossWidth} onChange={(e) => setCrossWidth(parseInt(e.target.value, 10))} />
-              </label>
-            </>
-          )}
-        </div>
-
-        <div style={styles.section}>
-          <label style={styles.label}>
+        <div style={styles.paramRow}>
+          <label style={styles.labelInline}>
             <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
             Grid
           </label>
           {showGrid && (
             <>
-              <label style={styles.label}>
-                Grid Spacing:
-                <input style={styles.input} type="number" value={gridSpacing} onChange={(e) => setGridSpacing(parseInt(e.target.value, 10))} />
-              </label>
-              <label style={styles.label}>
-                Grid Color:
-                <input style={styles.input} type="color" value={gridColor} onChange={(e) => setGridColor(e.target.value)} />
-              </label>
-              <label style={styles.label}>
-                Grid Width:
-                <input style={styles.input} type="number" value={gridWidth} onChange={(e) => setGridWidth(parseInt(e.target.value, 10))} />
-              </label>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={gridColor} onChange={(e) => setGridColor(e.target.value)} />
+                  </label>
+                <label style={styles.labelInline}>
+                Width:
+                  <input style={styles.inputNumber} type="number" value={gridWidth} onChange={(e) => setGridWidth(parseInt(e.target.value, 10))} />
+                </label>
+                  <input style={styles.inputNumber} type="number" value={gridSpacing} onChange={(e) => setGridSpacing(parseInt(e.target.value, 10))} />
+
             </>
           )}
         </div>
-
-        <div style={styles.section}>
-          <label style={styles.label}>
-            Text Color:
-            <input style={styles.input} type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
-          </label>
-          <label style={styles.label}>
-            Font Size:
-            <input style={styles.input} type="number" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value, 10))} />
-          </label>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            <input type="checkbox" checked={showPatternName} onChange={(e) => setShowPatternName(e.target.checked)} />
-            Show Pattern Name
-          </label>
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showPatternName} onChange={(e) => setShowPatternName(e.target.checked)} />
+              Show PatternName
+            </label>
+            {showCross && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={textColorPattern} onChange={(e) => setTextColorPattern(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Font size:
+                  <input style={styles.inputNumber} type="number" value={fontSizePattern} onChange={(e) => setFontSizePattern(parseInt(e.target.value, 10))} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.section}>
-          <label style={styles.label}>
-            <input type="checkbox" checked={showResolution} onChange={(e) => setShowResolution(e.target.checked)} />
-            Show Resolution
-          </label>
+          <div style={styles.paramRow}>
+            <label style={styles.labelInline}>
+              <input type="checkbox" checked={showResolution} onChange={(e) => setShowResolution(e.target.checked)} />
+              Show Resolution
+            </label>
+            {showCross && (
+              <>
+                <label style={styles.labelInline}>
+                  <input style={styles.inputColor} type="color" value={textColorResolution} onChange={(e) => setTextColorResolution(e.target.value)} />
+                </label>
+                <label style={styles.labelInline}>
+                  Font size:
+                  <input style={styles.inputNumber} type="number" value={fontSizeResolution} onChange={(e) => setFontSizeResolution(parseInt(e.target.value, 10))} />
+                </label>
+              </>
+            )}
+          </div>
         </div>
+
 
         <button style={styles.button} onClick={downloadImage}>Download PNG</button>
       </div>
@@ -374,6 +468,7 @@ const styles = {
     display: 'block',
     marginBottom: '5px',
     fontWeight: 'bold',
+    width: '50%',
   },
   input: {
     width: '100%',
@@ -391,6 +486,63 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '1em',
+  },
+  paramRow: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '10px',
+  },
+  resolutionRow: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  labelInline: {
+    marginRight: '5px',
+    fontWeight: 'bold',
+  },
+  inputColor: {
+    width: '20px',  // Taille fixe du côté du carré
+    height: '20px',  // Taille fixe du côté du carré
+    padding: '0',  // Pas de padding pour s'assurer que le carré est uniforme
+    borderRadius: '4px',  // Légèrement arrondi pour un aspect esthétique
+    border: '1px solid #ccc',  // Bordure standard pour le contrôle de formulaire
+    appearance: 'none',  // Supprime le style par défaut du picker
+    backgroundColor: 'transparent',  // Fond transparent pour ne pas masquer la couleur
+    cursor: 'pointer',  // Curseur en mode pointer pour indiquer que c'est cliquable
+  },
+  inputResolution: {
+    width: '60px',  // Ajustez la largeur si nécessaire
+    marginRight: '5px',
+    padding: '5px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    textAlign: 'center',
+    // Styles pour supprimer les flèches de nombre
+    MozAppearance: 'textfield',
+    appearance: 'textfield',
+  },
+  inputNumber: {
+    width: '50px',
+  },
+
+  inputInline: {
+    marginRight: '10px',
+    padding: '5px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    width: '25%',
+    // Styles pour supprimer les flèches de nombre
+    MozAppearance: 'textfield',
+    appearance: 'textfield',
+  },
+  // Supprimer les flèches dans WebKit (Chrome, Safari, etc.)
+  'input::-webkit-outer-spin-button': {
+    WebkitAppearance: 'none',
+    margin: 0,
+  },
+  'input::-webkit-inner-spin-button': {
+    WebkitAppearance: 'none',
+    margin: 0,
   },
 };
 
